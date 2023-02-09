@@ -1,12 +1,24 @@
+mod utils;
+
+// ----------------------------------------------
 use std::path::PathBuf;
 
-use super::{utils::radish_dir_check, BuildToolAppModel};
+use crate::app::{BTAppState, utils::GUIInfo};
 
 // ----------------------------------------------
 // Model
 // ----------------------------------------------
-pub struct MenuModel {
+pub struct MenuState {
     pub projectdir: Option<PathBuf>,
+}
+
+// ----------------------------------------------
+impl From<PathBuf> for MenuState {
+    fn from(filepath: PathBuf) -> MenuState {
+        MenuState { 
+            projectdir: utils::radish_dir_check(filepath)
+        }
+    }
 }
 
 // ----------------------------------------------
@@ -18,20 +30,20 @@ pub enum MenuCommand {
 }
 
 // ----------------------------------------------
-pub fn handle_command_menu(_ctx: &egui::Context, frame: &mut eframe::Frame, command: MenuCommand, model: &mut BuildToolAppModel) {
+pub fn handle_command(gui_info: &mut GUIInfo, state: &mut BTAppState, command: MenuCommand) {
     match command {
-        MenuCommand::OpenProject(projectdir) => model.menu.projectdir = projectdir,
-        MenuCommand::Quit                    => frame.close(),
+        MenuCommand::OpenProject(projectdir) => state.menu.projectdir = projectdir,
+        MenuCommand::Quit                    => gui_info.frame.close(),
     }
 }
 
 // ----------------------------------------------
 // UI
 // ----------------------------------------------
-pub fn show_menu(ctx: &egui::Context) -> Option<MenuCommand> {
+pub fn show(gui_info: &GUIInfo, _state: &BTAppState) -> Option<MenuCommand> {
     let mut result = None;
 
-    egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+    egui::TopBottomPanel::top("top_panel").show(gui_info.ctx, |ui| {
         egui::menu::bar(ui, |ui| {
             ui.set_enabled(true);
 
@@ -39,7 +51,7 @@ pub fn show_menu(ctx: &egui::Context) -> Option<MenuCommand> {
 
                 if ui.button("Open radish project…").clicked() {
                     if let Some(filepath) = rfd::FileDialog::new().pick_folder() {
-                        result = Some(MenuCommand::OpenProject(radish_dir_check(filepath)));
+                        result = Some(MenuCommand::OpenProject(utils::radish_dir_check(filepath)));
                     }
                     ui.close_menu();
                 }

@@ -1,19 +1,20 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 #![forbid(unsafe_code)]
+// ----------------------------------------------------------------------------
 
 use eframe::egui;
 
 use clap::value_parser;
 use std::path::PathBuf;
 
-use w3_buildtool::app::BuildToolApp;
+use w3_buildtool::app::BTApp;
 // ----------------------------------------------------------------------------
 
 const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 const NAME: &str = "w3 build tool";
 const ABOUT: &str = "Build tool for radish project templates.";
-// ----------------------------------------------------------------------------
 
+// ----------------------------------------------------------------------------
 fn interactive_mode(projectdir: PathBuf) {
     let app_name = format!("{} v{}", NAME, VERSION.unwrap_or("unknown"));
 
@@ -26,12 +27,12 @@ fn interactive_mode(projectdir: PathBuf) {
         &app_name,
         options,
         Box::new(|_cc| {
-            Box::new(BuildToolApp::from(projectdir))
+            Box::new(BTApp::from(projectdir))
         }),
     );
 }
-// ----------------------------------------------------------------------------
 
+// ----------------------------------------------------------------------------
 fn start_main() {
     // Log to stdout (if you run with `RUST_LOG=debug`).
     tracing_subscriber::fmt::init();
@@ -58,7 +59,6 @@ fn start_main() {
             .to_path_buf(),
     );
 }
-// ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
 use std::process;
@@ -66,4 +66,5 @@ fn main() {
     start_main();
     process::exit(0);
 }
+
 // ----------------------------------------------------------------------------

@@ -17,3 +17,6 @@ Cargo.lock
 *.sublime-project
 *.sublime-workspace
 *.code-workspace
+
+# test data
+_test-data_

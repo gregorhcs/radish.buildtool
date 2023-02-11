@@ -1,6 +1,6 @@
 use std::process::Command;
 
-use super::{BTAppState, utils::GUIInfo};
+use super::{BTAppState, utils::UIInfo};
 
 // ----------------------------------------------
 // Model
@@ -18,22 +18,26 @@ pub enum BatchCommand {
 }
 
 // ----------------------------------------------
-pub fn handle_command(_gui_info: &mut GUIInfo, state: &mut BTAppState, command: BatchCommand) {
+pub fn handle_command(_ui_info: &mut UIInfo, state: &mut BTAppState, command: BatchCommand) -> Result<(), String> {
     if let Some(dir) = state.menu.projectdir.clone() {
         let full_rebuild_path = dir.join("full.rebuild.bat");
-        match command {
-            BatchCommand::TestRunFullRebuild => Command::new(full_rebuild_path).spawn().expect("Command-line not spawning"),
-        };
+        return match command {
+            BatchCommand::TestRunFullRebuild => match Command::new(full_rebuild_path).spawn() {
+                Ok(_)  => Ok(()),
+                Err(_) => Err(String::from("Command line could not be spawned."))
+            }
+        }
     }
+    Ok(())
 }
 
 // ----------------------------------------------
 // UI
 // ----------------------------------------------
-pub fn show(gui_info: &GUIInfo, state: &BTAppState) -> Option<BatchCommand> {
+pub fn show(ui_info: &UIInfo, state: &BTAppState) -> Option<BatchCommand> {
     let mut result = None;
 
-    egui::CentralPanel::default().show(gui_info.ctx, |ui| {
+    egui::CentralPanel::default().show(ui_info.ctx, |ui| {
         if let Some(projectdir) = &state.menu.projectdir {
             if ui.button("full.rebuild.bat").clicked() {
                 result = Some(BatchCommand::TestRunFullRebuild);

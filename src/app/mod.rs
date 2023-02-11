@@ -1,16 +1,18 @@
 // ----------------------------------------------
-mod menu;
 mod batch;
+mod menu;
 
+mod aux_windows;
 mod utils;
 
 // ----------------------------------------------
 use std::path::PathBuf;
 
-use menu::MenuCommand;
 use batch::BatchCommand;
+use menu::MenuCommand;
 
-use utils::{GUIInfo, filter_push};
+use utils::UIInfo;
+
 
 // ----------------------------------------------
 // Build Tool Model
@@ -18,14 +20,18 @@ use utils::{GUIInfo, filter_push};
 pub struct BTAppState {
     pub menu: menu::MenuState,
     pub batch: batch::BatchState,
+
+    pub aux_windows: aux_windows::AuxWindowsState
 }
 
 // ----------------------------------------------
 impl From<PathBuf> for BTAppState {
     fn from(filepath: PathBuf) -> BTAppState {
-        BTAppState { 
-            menu:  menu::MenuState::from(filepath),
-            batch: batch::BatchState::default()
+        BTAppState {
+            menu: menu::MenuState::from(filepath),
+            batch: batch::BatchState::default(),
+
+            aux_windows: aux_windows::AuxWindowsState::default(),
         }
     }
 }
@@ -33,23 +39,23 @@ impl From<PathBuf> for BTAppState {
 // ----------------------------------------------
 // Build Tool View
 // ----------------------------------------------
-fn show(gui_info: &GUIInfo, state: &BTAppState) -> Vec<Option<BTAppCommand>> {
+fn show(ui_info: &UIInfo, state: &BTAppState) -> Vec<BTAppCommand> {
 
     let mut results = Vec::new();
 
-    egui::CentralPanel::default().show(&gui_info.ctx, |_ui| {
+    egui::CentralPanel::default().show(&ui_info.ctx, |_ui| {
 
-        if let Some(command) = menu::show(gui_info, state) {
-            filter_push(&mut results, Some(BTAppCommand::Menu(command)));
+        if let Some(command) = menu::show(ui_info, state) {
+            results.push(BTAppCommand::Menu(command));
         }
-
-        if let Some(command) = batch::show(gui_info, state) {
-            filter_push(&mut results, Some(BTAppCommand::Batch(command)));
+        if let Some(command) = batch::show(ui_info, state) {
+            results.push(BTAppCommand::Batch(command));
         }
 
     });
 
     results
+
 }
 
 // ----------------------------------------------
@@ -57,17 +63,15 @@ fn show(gui_info: &GUIInfo, state: &BTAppState) -> Vec<Option<BTAppCommand>> {
 // ----------------------------------------------
 enum BTAppCommand {
     Menu(MenuCommand),
-    Batch(BatchCommand),
+    Batch(BatchCommand)
 }
 
 // ----------------------------------------------
-fn handle_command(gui_info: &mut GUIInfo, state: &mut BTAppState, command: BTAppCommand) {
-    
+fn handle_command(ui_info: &mut UIInfo, state: &mut BTAppState, command: BTAppCommand) -> Result<(), String> {
     match command {
-        BTAppCommand::Menu(sub_command) => menu::handle_command(gui_info, state, sub_command),
-        BTAppCommand::Batch(sub_command) => batch::handle_command(gui_info, state, sub_command),
+        BTAppCommand::Menu(sub_command) => menu::handle_command(ui_info, state, sub_command),
+        BTAppCommand::Batch(sub_command) => batch::handle_command(ui_info, state, sub_command)
     }
-
 }
 
 // --------------------------------------------------------------------------------------------
@@ -77,14 +81,14 @@ fn handle_command(gui_info: &mut GUIInfo, state: &mut BTAppState, command: BTApp
 // Build Tool App
 // ----------------------------------------------
 pub struct BTApp {
-    model: BTAppState,
+    state: BTAppState,
 }
 
 // ----------------------------------------------
 impl From<PathBuf> for BTApp {
     fn from(filepath: PathBuf) -> BTApp {
-        BTApp { 
-            model: BTAppState::from(filepath),
+        BTApp {
+            state: BTAppState::from(filepath),
         }
     }
 }
@@ -93,12 +97,28 @@ impl From<PathBuf> for BTApp {
 impl eframe::App for BTApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
 
-        let mut gui_info = GUIInfo{ ctx, frame };
+        let mut ui_info = UIInfo { ctx, frame };
 
-        for wrapped_command in show(&gui_info, &self.model) {
-            if let Some(command) = wrapped_command {
-                handle_command(&mut gui_info, &mut self.model, command);
+        
+        // process main command list
+
+        let mut commands = show(&ui_info, &self.state);
+
+        while let Some(command) = commands.pop() {
+            let result = handle_command(&mut ui_info, &mut self.state, command);
+
+            if let Err(message) = result {
+                self.state.aux_windows.set_showing_error(message);
             }
+        }
+
+        
+        // process auxiliary windows
+        
+        let potential_command = aux_windows::show(&ui_info, &self.state);
+
+        if let Some(command) = potential_command {
+            aux_windows::handle_command(&mut ui_info, &mut self.state, command);
         }
 
     }

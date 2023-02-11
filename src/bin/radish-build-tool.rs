@@ -2,7 +2,7 @@
 #![forbid(unsafe_code)]
 // ----------------------------------------------------------------------------
 
-use eframe::egui;
+use eframe::{egui, IconData};
 
 use clap::value_parser;
 use std::path::PathBuf;
@@ -18,17 +18,22 @@ const ABOUT: &str = "Build tool for radish project templates.";
 fn interactive_mode(projectdir: PathBuf) {
     let app_name = format!("{} v{}", NAME, VERSION.unwrap_or("unknown"));
 
+    let img = image::open("assets/icon.radish.png").expect("Icon not found!");
+
     let options = eframe::NativeOptions {
         initial_window_size: Some(egui::vec2(440.0, 360.0)),
+        icon_data: Some(IconData{ 
+            rgba:   img.to_rgba8().to_vec(), 
+            width:  img.width(), 
+            height: img.height() 
+        }),
         ..Default::default()
     };
 
     eframe::run_native(
         &app_name,
         options,
-        Box::new(|_cc| {
-            Box::new(BTApp::from(projectdir))
-        }),
+        Box::new(|_cc| Box::new(BTApp::from(projectdir))),
     );
 }
 

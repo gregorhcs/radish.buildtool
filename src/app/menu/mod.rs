@@ -25,6 +25,7 @@ impl From<PathBuf> for MenuState {
 // Commands
 // ----------------------------------------------
 pub enum MenuCommand {
+    NewProject,
     OpenProject,
     CloseProject,
     Quit,
@@ -33,6 +34,7 @@ pub enum MenuCommand {
 // ----------------------------------------------
 pub fn handle_command(ui_info: &mut UIInfo, state: &mut BTAppState, command: MenuCommand) -> Result<(), String> {
     match command {
+        MenuCommand::NewProject => { state.aux_windows.set_showing_info(format!("Feature not implemented yet.")); } // TODO: Implement adding a new project.
         MenuCommand::OpenProject => {
             match rfd::FileDialog::new().pick_folder() {
                 Some(filepath) => { 
@@ -61,9 +63,16 @@ pub fn show(ui_info: &UIInfo, state: &BTAppState) -> Option<MenuCommand> {
 
     egui::TopBottomPanel::top("top_panel").show(ui_info.ctx, |ui| {
         egui::menu::bar(ui, |ui| {
-            ui.set_enabled(true);
+            ui.set_enabled(state.aux_windows.show.is_none());
 
             ui.menu_button("Project", |ui| {
+
+                if false { // TODO: Implement adding a new project.
+                    if ui.button("New project…").clicked() {
+                        result = Some(MenuCommand::NewProject);
+                        ui.close_menu();
+                    }
+                }
 
                 if ui.button("Open project…").clicked() {
                     result = Some(MenuCommand::OpenProject);
@@ -72,17 +81,15 @@ pub fn show(ui_info: &UIInfo, state: &BTAppState) -> Option<MenuCommand> {
 
                 let is_project_open = state.menu.projectdir.is_some();
                 ui.add_enabled_ui(is_project_open, |ui| {
-
                     if ui.button("Close project").clicked() {
                         result = Some(MenuCommand::CloseProject);
                         ui.close_menu();
                     }
-
                 });
 
                 ui.separator();
 
-                if ui.button("Quit").clicked() {
+                if ui.button("Exit").clicked() {
                     result = Some(MenuCommand::Quit);
                     ui.close_menu();
                 }

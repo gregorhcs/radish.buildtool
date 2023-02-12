@@ -44,12 +44,20 @@ fn show(ui_info: &UIInfo, state: &BTAppState) -> Vec<BTAppCommand> {
     let mut results = Vec::new();
 
     egui::CentralPanel::default().show(&ui_info.ctx, |_ui| {
-
+            
         if let Some(command) = menu::show(ui_info, state) {
             results.push(BTAppCommand::Menu(command));
         }
-        if let Some(command) = batch::show(ui_info, state) {
-            results.push(BTAppCommand::Batch(command));
+
+        if state.menu.projectdir.is_some() {
+            if let Some(command) = batch::show(ui_info, state) {
+                results.push(BTAppCommand::Batch(command));
+            }
+        }
+        else {
+            egui::CentralPanel::default().show(ui_info.ctx, |ui| {
+                ui.add_enabled_ui(false, |ui| ui.label("No project open."));
+            });
         }
 
     });

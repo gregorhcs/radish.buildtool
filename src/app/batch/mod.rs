@@ -38,6 +38,8 @@ pub fn show(ui_info: &UIInfo, state: &BTAppState) -> Option<BatchCommand> {
     let mut result = None;
 
     egui::CentralPanel::default().show(ui_info.ctx, |ui| {
+        ui.set_enabled(state.aux_windows.show.is_none());
+
         if let Some(projectdir) = &state.menu.projectdir {
             if ui.button("full.rebuild.bat").clicked() {
                 result = Some(BatchCommand::TestRunFullRebuild);

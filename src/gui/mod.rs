@@ -3,7 +3,6 @@ mod batch;
 mod menu;
 
 mod aux_windows;
-mod utils;
 
 // ----------------------------------------------
 use std::path::PathBuf;
@@ -11,7 +10,7 @@ use std::path::PathBuf;
 use batch::BatchCommand;
 use menu::MenuCommand;
 
-use utils::UIInfo;
+use crate::utils::{self, UIInfo};
 
 
 // ----------------------------------------------
@@ -105,8 +104,9 @@ impl From<PathBuf> for BTApp {
 impl eframe::App for BTApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
 
-        let mut ui_info = UIInfo { ctx, frame };
+        frame.set_window_title(utils::config::gui_title(&self.state.menu.projectdir).as_str());
 
+        let mut ui_info = UIInfo { ctx, frame };
         
         // process main command list
 

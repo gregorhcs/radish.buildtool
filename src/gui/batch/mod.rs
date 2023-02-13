@@ -1,6 +1,8 @@
 use std::process::Command;
 
-use super::{BTAppState, utils::UIInfo};
+use crate::utils::{self, UIInfo};
+
+use super::BTAppState;
 
 // ----------------------------------------------
 // Model
@@ -18,15 +20,26 @@ pub enum BatchCommand {
 }
 
 // ----------------------------------------------
-pub fn handle_command(_ui_info: &mut UIInfo, state: &mut BTAppState, command: BatchCommand) -> Result<(), String> {
+pub fn handle_command(_ui_info: &mut UIInfo, state: &mut BTAppState, _command: BatchCommand) -> Result<(), String> {
     if let Some(dir) = state.menu.projectdir.clone() {
+        println!("smpd {:?}", state.menu.projectdir);
+        println!("dir1 {:?}", dir);
         let full_rebuild_path = dir.join("full.rebuild.bat");
-        return match command {
+        println!("dir2 {:?}", dir);
+        println!("frpt {:?}", full_rebuild_path);
+        let mut cmd = Command::new(full_rebuild_path);
+        cmd.current_dir(dir);
+        println!("curd {:?}", cmd.get_current_dir().unwrap().to_str());
+        println!("curp {:?}", cmd.get_program().to_str());
+        cmd.status().expect("failed to execute");
+/*         return match command {
             BatchCommand::TestRunFullRebuild => match Command::new(full_rebuild_path).spawn() {
-                Ok(_)  => Ok(()),
+                Ok(child)  => {
+                    Ok(())
+                },
                 Err(_) => Err(String::from("Command line could not be spawned."))
             }
-        }
+        } */
     }
     Ok(())
 }
@@ -44,7 +57,7 @@ pub fn show(ui_info: &UIInfo, state: &BTAppState) -> Option<BatchCommand> {
             if ui.button("full.rebuild.bat").clicked() {
                 result = Some(BatchCommand::TestRunFullRebuild);
             }
-            ui.label(format!("Current directory…: '{:?}'", projectdir));
+            ui.label(format!("Current directory…: '{}'", utils::paths::pretty_print(projectdir)));
         };
     });
 

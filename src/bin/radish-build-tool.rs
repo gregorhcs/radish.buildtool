@@ -7,16 +7,11 @@ use eframe::{egui, IconData};
 use clap::value_parser;
 use std::path::PathBuf;
 
-use w3_buildtool::app::BTApp;
-// ----------------------------------------------------------------------------
-
-const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
-const NAME: &str = "w3 build tool";
-const ABOUT: &str = "Build tool for radish project templates.";
+use w3_buildtool::{gui::BTApp, utils::config};
 
 // ----------------------------------------------------------------------------
 fn interactive_mode(projectdir: PathBuf) {
-    let app_name = format!("{} v{}", NAME, VERSION.unwrap_or("unknown"));
+    let app_name = format!("{} v{}", config::NAME, config::VERSION.unwrap_or("unknown"));
 
     let img = image::open("assets/icon.radish.png").expect("Icon not found!");
 
@@ -42,9 +37,9 @@ fn start_main() {
     // Log to stdout (if you run with `RUST_LOG=debug`).
     tracing_subscriber::fmt::init();
 
-    let matches = clap::Command::new(NAME)
-        .version(VERSION)
-        .about(ABOUT)
+    let matches = clap::Command::new(config::NAME)
+        .version(config::VERSION)
+        .about(config::ABOUT)
         .arg(
             clap::Arg::new("project-path")
                 .long("project-path")
@@ -57,11 +52,17 @@ fn start_main() {
         return;
     }
 
+    config::ensure_conf_exists();
+    config::load_recent_projectpaths();
+
     interactive_mode(
-        matches
-            .get_one::<PathBuf>("project-path")
-            .unwrap_or(&PathBuf::default())
-            .to_path_buf(),
+        config::load_most_recent_projectpath()
+            .unwrap_or(
+                matches
+                .get_one::<PathBuf>("project-path")
+                .unwrap_or(&PathBuf::default())
+                .to_path_buf()
+            )
     );
 }
 

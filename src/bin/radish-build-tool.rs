@@ -10,17 +10,20 @@ use std::path::PathBuf;
 use w3_buildtool::{gui::BTApp, utils::config};
 
 // ----------------------------------------------------------------------------
+const ASSETS_RADISH_ICON: &str = "assets/icon.radish.png";
+
+// ----------------------------------------------------------------------------
 fn interactive_mode(projectdir: PathBuf) {
     let app_name = format!("{} v{}", config::NAME, config::VERSION.unwrap_or("unknown"));
 
-    let img = image::open("assets/icon.radish.png").expect("Icon not found!");
+    let img = image::open(ASSETS_RADISH_ICON).expect("Icon not found!");
 
     let options = eframe::NativeOptions {
-        initial_window_size: Some(egui::vec2(440.0, 360.0)),
-        icon_data: Some(IconData{ 
-            rgba:   img.to_rgba8().to_vec(), 
-            width:  img.width(), 
-            height: img.height() 
+        initial_window_size: Some(egui::vec2(640.0, 460.0)),
+        icon_data: Some(IconData {
+            rgba: img.to_rgba8().to_vec(),
+            width: img.width(),
+            height: img.height(),
         }),
         ..Default::default()
     };
@@ -56,13 +59,12 @@ fn start_main() {
     config::load_recent_projectpaths();
 
     interactive_mode(
-        config::load_most_recent_projectpath()
-            .unwrap_or(
-                matches
+        config::load_most_recent_projectpath().unwrap_or(
+            matches
                 .get_one::<PathBuf>("project-path")
                 .unwrap_or(&PathBuf::default())
-                .to_path_buf()
-            )
+                .to_path_buf(),
+        ),
     );
 }
 

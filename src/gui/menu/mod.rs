@@ -1,7 +1,7 @@
 // ----------------------------------------------
 use std::path::PathBuf;
 
-use crate::utils::{self, UIInfo};
+use crate::utils::{self, config, UIInfo};
 
 use super::BTAppState;
 
@@ -15,20 +15,21 @@ pub struct MenuState {
 // ----------------------------------------------
 impl MenuState {
     pub fn open_project(&mut self, filepath: PathBuf) -> Result<(), ()> {
-
         match utils::paths::radish_dir_check(filepath) {
-            Some(projectpath) => { self.projectdir = Some(projectpath); Ok(()) },
-            None              => Err(())
+            Some(projectpath) => {
+                self.projectdir = Some(projectpath);
+                Ok(())
+            }
+            None => Err(()),
         }
-
     }
 }
 
 // ----------------------------------------------
 impl From<PathBuf> for MenuState {
     fn from(filepath: PathBuf) -> MenuState {
-        MenuState { 
-            projectdir: utils::paths::radish_dir_check(filepath)
+        MenuState {
+            projectdir: utils::paths::radish_dir_check(filepath),
         }
     }
 }
@@ -40,39 +41,54 @@ pub enum MenuCommand {
     NewProject,
     OpenProject,
     OpenRecentProject(PathBuf),
+    ClearRecentlyOpened,
     CloseProject,
     Quit,
 }
 
 // ----------------------------------------------
-pub fn handle_command(ui_info: &mut UIInfo, state: &mut BTAppState, command: MenuCommand) -> Result<(), String> {
-
+pub fn handle_command(
+    ui_info: &mut UIInfo,
+    state: &mut BTAppState,
+    command: MenuCommand,
+) -> Result<(), String> {
     match command {
+        MenuCommand::NewProject => {
+            state
+                .aux_windows
+                .set_showing_info(format!("Feature not implemented yet."));
+        } // TODO: Implement adding a new project.
 
-        MenuCommand::NewProject => { state.aux_windows.set_showing_info(format!("Feature not implemented yet.")); } // TODO: Implement adding a new project.
-
-        MenuCommand::OpenProject => {
-            match rfd::FileDialog::new().pick_folder() {
-                Some(filepath) => 
-                    if state.menu.open_project(filepath).is_err() {
-                        state.aux_windows.set_showing_info("No radish project found in the selected directory.");
-                    },
-                None => { return Err(String::from("No project directory picked."));  }
+        MenuCommand::OpenProject => match rfd::FileDialog::new().pick_folder() {
+            Some(filepath) => {
+                if state.menu.open_project(filepath).is_err() {
+                    state
+                        .aux_windows
+                        .set_showing_info("No radish project found in the selected directory.");
+                }
+            }
+            None => {
+                return Err(String::from("No project directory picked."));
             }
         },
 
-        MenuCommand::OpenRecentProject(filepath) => 
+        MenuCommand::OpenRecentProject(filepath) => {
             if state.menu.open_project(filepath).is_err() {
-                state.aux_windows.set_showing_info("No radish project found in the selected recent directory.");
-            },
+                state
+                    .aux_windows
+                    .set_showing_info("No radish project found in the selected recent directory.");
+            }
+        }
 
-        MenuCommand::CloseProject => { state.menu.projectdir = None; },
+        MenuCommand::ClearRecentlyOpened => config::clear_recent_projectpaths(),
 
-        MenuCommand::Quit => ui_info.frame.close()
+        MenuCommand::CloseProject => {
+            state.menu.projectdir = None;
+        }
 
+        MenuCommand::Quit => ui_info.frame.close(),
     }
     Ok(())
-
 }
 
 // ----------------------------------------------
@@ -86,8 +102,8 @@ pub fn show(ui_info: &UIInfo, state: &BTAppState) -> Option<MenuCommand> {
             ui.set_enabled(state.aux_windows.show.is_none());
 
             ui.menu_button("Project", |ui| {
-
-                if false { // TODO: Implement adding a new project.
+                if false {
+                    // TODO: Implement adding a new project.
                     if ui.button("New project…").clicked() {
                         result = Some(MenuCommand::NewProject);
                         ui.close_menu();
@@ -104,17 +120,42 @@ pub fn show(ui_info: &UIInfo, state: &BTAppState) -> Option<MenuCommand> {
                     ui.menu_button("Open recent project…", |ui| {
                         ui.set_min_width(400.);
 
-                        for (slot, path) in recent_projectdirs.iter().enumerate() {
-                            if slot == 0 {
-                                continue;
-                            }
+                        recent_projectdirs
+                            .iter()
+                            .enumerate()
+                            .map(|(i, p)| (i + 1, p))
+                            .for_each(|(slot, path)| {
+                                ui.add_enabled_ui(
+                                    slot != 1 || state.menu.projectdir.is_none(),
+                                    |ui| {
+                                        if ui
+                                            .button(format!(
+                                                "{} {} {}",
+                                                slot,
+                                                utils::paths::pretty_print(path),
+                                                if slot == 1 && state.menu.projectdir.is_some() {
+                                                    "(open)"
+                                                } else {
+                                                    ""
+                                                }
+                                            ))
+                                            .clicked()
+                                        {
+                                            result = Some(MenuCommand::OpenRecentProject(
+                                                path.to_path_buf(),
+                                            ));
+                                            ui.close_menu();
+                                        }
+                                    },
+                                );
+                            });
 
-                            if ui.button(format!("{} {}", slot, utils::paths::pretty_print(path))).clicked() {
-                                result = Some(MenuCommand::OpenRecentProject(path.to_path_buf()));
-                                ui.close_menu();
-                            }
-                        }
-    
+                        ui.separator();
+
+                        if ui.button("Clear recently opened").clicked() {
+                            result = Some(MenuCommand::ClearRecentlyOpened);
+                            ui.close_menu();
+                        };
                     });
                 });
 
@@ -132,7 +173,6 @@ pub fn show(ui_info: &UIInfo, state: &BTAppState) -> Option<MenuCommand> {
                     result = Some(MenuCommand::Quit);
                     ui.close_menu();
                 }
-                
             })
         })
     });

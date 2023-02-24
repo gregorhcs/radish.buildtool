@@ -1,4 +1,4 @@
-name: Build
+name: Tests
 
 on: [push]
 
@@ -22,3 +22,6 @@ jobs:
 
       - name: Build
         run: cargo build --all --release
+
+      - name: Test
+        run: cargo test --workspace

@@ -17,6 +17,10 @@ Cargo.lock
 *.sublime-project
 *.sublime-workspace
 *.code-workspace
+.vscode/
 
 # test data
 _test-data_
+
+# git ignore application temp data
+conf.ini
